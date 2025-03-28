@@ -24,7 +24,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:5174"}}, supports_credentials=True)
 app.secret_key = os.urandom(24)
 
-# Configure logging
+# logging
 logging.basicConfig(filename='app.log', level=logging.DEBUG)
 
 @app.errorhandler(500)
