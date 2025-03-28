@@ -432,27 +432,44 @@ def feedback():
     return render_template('feedback.html')
 
 # Backtesting routes
-@app.route('/backtest', methods=['GET', 'POST'])
-@login_required
+from flask import Flask, request, jsonify
+import pandas as pd
+import logging
+
+app = Flask(__name__)
+
+
+@app.route('/api/backtest', methods=['POST'])
 def backtest():
-    if request.method == 'POST':
-        stock_symbol = request.form['stock_symbol']
-        start_date = request.form['start_date']
-        end_date = request.form['end_date']
-        strategy = example_strategy  # You can allow users to select different strategies
+    try:
+        data = request.get_json()
+        stock_symbol = data['stock_symbol']
+        start_date = data['start_date']
+        end_date = data['end_date']
 
-        # Perform backtesting
-        cumulative_returns = backtest_strategy(stock_symbol, start_date, end_date, strategy)
+        # Assuming you have a function to get the stock data
+        stock_data = get_stock_data(stock_symbol, start_date, end_date)
 
-        # Convert the results to JSON
-        cumulative_returns_json = cumulative_returns.to_frame(name='Cumulative Returns').to_json()
+        # Ensure the 'Date' column is set as the index
+        stock_data['Date'] = pd.to_datetime(stock_data['Date'])
+        stock_data.set_index('Date', inplace=True)
 
-        return jsonify({
-            'stock_symbol': stock_symbol,
-            'cumulative_returns': cumulative_returns_json
-        })
+        # Perform your backtest logic here
+        cumulative_returns = calculate_cumulative_returns(stock_data)
 
-    return render_template('backtest.html')
+        return jsonify({'cumulative_returns': cumulative_returns})
+    except Exception as e:
+        logging.error(f"Error in /api/backtest endpoint: {e}")
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
+
+def calculate_cumulative_returns(stock_data):
+    # Dummy function to simulate calculating cumulative returns
+    # Replace this with actual calculation logic
+    stock_data['Cumulative Returns'] = stock_data['Close'].pct_change().cumsum()
+    return stock_data['Cumulative Returns'].to_dict()
+
 
 # Risk assessment routes
 @app.route('/portfolio/<int:portfolio_id>/risk', methods=['GET'])
